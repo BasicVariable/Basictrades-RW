@@ -1,0 +1,26 @@
+auth: 
+    cookies:
+    - ""
+    # Don't need to add anything in here wait for docs
+    valueServer: ""
+
+input: 
+    botPrefix: "$"
+    discord:
+        botToken: ""
+        channels: 
+            output: ""
+            completeds: ""
+
+mass-send:
+    doNotSendTo:
+    - 1
+    lastOnline: "1w"
+
+# Everything below are extra settings and can be left alone
+output: 
+    queueAdditions: true
+    searchedPeople: false
+
+cache: 
+    sentTo: true

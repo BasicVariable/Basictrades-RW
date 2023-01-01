@@ -31,18 +31,6 @@ global.properOutput = {
     })
 };
 
- // Values 
-new Promise(async () => {
-    let gettingValues = properOutput.output("Getting values...", "yellow");
-    global.rolimonsValues = await rbxApi.getRolimonsValues();
-    gettingValues("Got values!", "green");
-    
-    while (true){
-        await delay(50_000);
-        global.rolimonsValues = await rbxApi.getRolimonsValues();
-    }
-});
-
 fs.readFile("./config.yml", 'utf-8', async (err, res) => {
     if (err) await properOutput.reactiveError(`Failed to read config.yml\nStopping process in 20 seconds...`, 20_000, process.exit());
     
@@ -53,6 +41,18 @@ fs.readFile("./config.yml", 'utf-8', async (err, res) => {
         await properOutput.reactiveError(`Failed to read config.yml\nStopping process in 20 seconds...`, 20_000, process.exit());
     };
 
+     // Values 
+    new Promise(async () => {
+        let gettingValues = properOutput.output("Getting values...", "yellow");
+        global.rolimonsValues = await rbxApi.getRolimonsValues();
+        gettingValues("Got values!", "green");
+
+        while (true){
+            await delay(50_000);
+            global.rolimonsValues = await rbxApi.getRolimonsValues();
+        }
+    });
+    
     for (cookie of config.auth.cookies){
         if (cookie.length<10) continue;
         

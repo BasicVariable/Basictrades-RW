@@ -31,9 +31,11 @@ Windows:
 3. Click the three bars at the top right of the screen and click the "Bot" tab (if you don't see the 3 dots just click the "bot" tab omfg)
 4. Create a bot and click "reveal token"
 5. Copy the token and paste it into the string that follows "bot_token": in the config.json file
-6. Go back to the sub-menu that you got through step 3 and pess "OAuth2" then press "URL Generator"
-7. Click the "Bot" check-mark under scopes and give the bot "Administrator" permisisons.
-8. Copy the Generated link and use it to invite the bot to your server
+6. Go back to the same page and scroll down to "Privileged Gateway Intents"
+7. Enable: "PRESENCE INTENT", "SERVER MEMBERS INTENT", and "MESSAGE CONTENT INTENT". If they aren't already.
+8. Go back to the sub-menu that you got through step 3 and pess "OAuth2" then press "URL Generator"
+9. Click the "Bot" check-mark under scopes and give the bot "Administrator" permisisons.
+10. Copy the Generated link and use it to invite the bot to your server
 ```
 
 # Config Documentation

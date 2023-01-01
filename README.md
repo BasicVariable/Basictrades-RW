@@ -69,4 +69,6 @@ output > searchedPeople
 cache > sentTo
   - Whether or not you'd like the people you've sent to (item specfic) to be cached so that if the bot restarts it wont send to the same people (unless 12 hours have passed)
 
-- by discord.gg/callie / Basic#2142
+
+------------
+By discord.gg/callie / Basic#2142

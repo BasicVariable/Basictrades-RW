@@ -2,14 +2,26 @@
 Basictrades is a trading assistant that currently helps you send trades to active owners of a specific item, the entire project will remain open-source and updated throughout time.
 
 # Installation
-BT is known to work on Linux and Windows 10+ at the moment, for additional support on other OSes check the discord server (bottom of readme)
+BT is known to work on Linux and Windows 10+ at the moment, for additional support on other OSes check the discord server (bottom of readme).
+
+BEFORE INSTALLING MAKE SURE TO INSTALL THE CURRENT LTS VERSION OF NODE.JS
 ```
 1. Download all the files in this repository through the code button and by clicking "download zip"
 2. Extract the zip and open the folder the files are in
-3. Run the "run.sh" file (Linux users follow 3a-3c) 
+
+Linux:
+3. Run the "run.sh" file
   3a. Linux users will need to right click the file
   3b. Click "Properties"
   3c. Go to permissions and click "Allow executing files as program"
+  
+Windows:
+3. Open command prompt with the folder that contains all the files as the directory
+4. Type 'cd ./JS' and press enter
+5. Type 'npm install' and press enter
+6. Type 'cd ../' and press enter
+7. Type 'node ./JS/index.js'
+(whenever you want to run it again only do steps 3 and 7)
 ```
 
 # Discord Bot Token

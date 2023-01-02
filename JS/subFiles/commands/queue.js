@@ -283,7 +283,7 @@ module.exports = {
         },
         {
             name: "clearQueue",
-            description: "Clears the sending queue for an account, default for account is the first account in the cookies list.",
+            description: "Clears the sending queue for an account, default for account is all accounts in the cookies list.",
             options: "[account]",
             permissions: []
         }

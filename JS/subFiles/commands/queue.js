@@ -10,8 +10,8 @@ var commmands = {};
 const rankSimilarity = async (string, array) => {
     let distanceMap = new Map();
 
-    for (comparable in array){
-        let distance = stringSimilarity.compareTwoStrings(comparable, string.toLowerCase());
+    for (comparable of array){
+        let distance = stringSimilarity.compareTwoStrings(comparable, string);
         
         distanceMap.set(
             comparable,
@@ -25,17 +25,68 @@ const rankSimilarity = async (string, array) => {
     if (closest[1] > 0.2) return closest[0]
 };
 
-const confirmTrade = async (offer, request, account, message) => {
-    let uaids2ids = offer.reduce((a, c) => a[a.length+1]=(account.inventory.filter(item => item.userAssetId == c)[0]) || null, []);
-    if (uaids2ids.length != offer.length  && !"name" in uaids2ids) return [`Not all items offered are owned by ${account.name}`, false];
+const createQuestion = async (message, question) => {
+    const embed = {
+        content: `${question}\n*Action automatically cancels in 60 seconds*`,
+        components: [
+            {
+                "type": 1,
+                "components": [
+                {
+                    "style": 1,
+                    "label": `✅`,
+                    "custom_id": `accept`,
+                    "disabled": false,
+                    "type": 2
+                },
+                {
+                    "style": 1,
+                    "label": `❌`,
+                    "custom_id": `decline`,
+                    "disabled": false,
+                    "type": 2
+                }
+                ]
+            }
+        ]
+    };
 
-    // No idea why it decides it's an object when it's initial value is an array wtff
-    if ("name" in uaids2ids) uaids2ids = [uaids2ids];
+    let botQuestion = await message.reply(embed)
+        .catch(async (err) => properoutput.error(`Failed to ask questio\n${err}`));
+
+    return await new Promise(async (resolve) => {
+        if (!botQuestion) resolve();
+
+        const filter = (i) => i.componentType == 2;
+        botQuestion.awaitMessageComponent({filter, time: 60_000, errors: ['time']})
+            .then(i => {
+                i.deferUpdate();
+
+                if (i.user.id != message.author.id) return;
+
+                if (i.customId==="accept") resolve(true); else
+                    resolve(false);
+            })
+            .catch(() => resolve(false));
+    })
+};
+
+const confirmTrade = async (offer, request, account, message) => {
+    let uaids2ids = [];
+
+    for (uaid of offer){
+        let hasItem = account.inventory.filter(item => item.userAssetId == uaid)[0];
+        if (!hasItem) continue;
+
+        uaids2ids.push(hasItem.assetId)
+    };
+
+    if (uaids2ids.length < offer.length) return [`Some of the offer items aren't owned by ${account.name}`, false];
 
     const offerTotal = {
-        value: uaids2ids.reduce((a, current) => a+=rolimonsValues[current.assetId][4], 0),
-        rap: uaids2ids.reduce((a, current) => a+=rolimonsValues[current.assetId][2], 0),
-        string: uaids2ids.reduce((a, current) => a+=`${rolimonsValues[current.assetId][0]} (${rolimonsValues[current.assetId][4]}) ${(rolimonsValues[current.assetId][7]==1)?" ⚠️":""}\n`, "")
+        value: uaids2ids.reduce((a, current) => a+=rolimonsValues[current][4], 0),
+        rap: uaids2ids.reduce((a, current) => a+=rolimonsValues[current][2], 0),
+        string: uaids2ids.reduce((a, current) => a+=`${rolimonsValues[current][0]} (${rolimonsValues[current][4]}) ${(rolimonsValues[current][7]==1)?" ⚠️":""}\n`, "")
     };
 
     if (!message){
@@ -44,11 +95,12 @@ const confirmTrade = async (offer, request, account, message) => {
             output: process.stdout
         });
 
-        const answer = await rl.question(`Send trade (yes/no)? [${uaids2ids}] (${offerTotal.value}) => [${rolimonsValues[current][0]}] (${rolimonsValues[current][4]})`);
+        const answer = await rl.question(`Send trade (yes/no)? [${uaids2ids}] (${offerTotal.value}) => [${rolimonsValues[request][0]}] (${rolimonsValues[request][4]})`);
         rl.close();
 
         return (answer)?["Queuing trade to be sent", true]:["Canceled trade", false]
     };
+
     let prompt = await message.channel.send({
         components: [
             {
@@ -108,6 +160,8 @@ const confirmTrade = async (offer, request, account, message) => {
             .then(i => {
                 i.deferUpdate();
 
+                if (i.user.id != message.author.id) return;
+
                 if (i.customId==="accept") resolve(["Queuing trade to be sent", true]); else
                     resolve(["Canceled trade", false]);
             })
@@ -115,38 +169,80 @@ const confirmTrade = async (offer, request, account, message) => {
     })
 };
 
-commmands.clearqueue = async (args) => {
+commmands.clearqueue = async (args, content, message) => {
     let account;
-    if (!args[1]) account = (Object.values(robloxAccounts))[0];else{
-       let accountMatches = Object.values(robloxAccounts).filter(acc => (acc.name).toLowerCase() === args[1]); 
-       if (accountMatches.length<1) return "Failed to find account";
+
+    if (!args[1]){
+        let accounts = Object.values(robloxAccounts);
+        for (account of accounts){
+            robloxAccounts[account.id].scrapingQueue = [];
+            robloxAccounts[account.id].queue = [];
+        };
+
+        return "Cleared the queue for all accounts"
     };
 
-    account.scrapingQueue = [];
-    account.queue = [];
+    let accountMatches = Object.values(robloxAccounts).filter(acc => (acc.name).toLowerCase() === (args[1] || "").toLowerCase());
+    if (accountMatches.length > 0) account = accountMatches[0]; else{
+        let accountNames = Object.values(robloxAccounts).reduce((a, current) => a[a.length+1] = current.name, []);
+        // some reason it converts to an string even though the initial is an array??
+        if (typeof accountNames === "string") accountNames = [accountNames];
+
+        let similarName = await rankSimilarity(args[1], accountNames);
+        if (!similarName) return "Couldn't similar username to the one requested";
+
+        let userConfirmation = await createQuestion(message, `**"${args[1]}"** wasn't found, did you mean **"${similarName}"**?`);
+        if (!userConfirmation) return "Mass-send request canceled";
+
+        account = (Object.values(robloxAccounts).filter(acc => acc.name === similarName))[0]
+    };
+
+    robloxAccounts[account.id].scrapingQueue = [];
+    robloxAccounts[account.id].queue = [];
 
     return `Cleared queue for ${account.name}`
 };
 
 commmands["mass-send"] = async (args, content, message) => {
-    let continuous = args[1], account, request = args[3], offer = (content.substring(content.indexOf(args[4]))).split(",");
+    // args: [0] = command name [1] = account name [2] = item to request [3] = items to send
+    let account, 
+        request = args[2], 
+        continuous, 
+        offer = content.substring(content.indexOf(request)+request.length)
+            .replace(/[ ]/g, "")
+            .split(",");
 
-    if (!Boolean(continuous)) return "Continuous isn't set to true/false";
+    let accountMatches = Object.values(robloxAccounts).filter(acc => (acc.name).toLowerCase() === (args[1]).toLowerCase());
+    if (accountMatches.length > 0) account = accountMatches[0]; else{
+        let accountNames = Object.values(robloxAccounts).reduce((a, current) => a[a.length+1] = current.name, []);
+        // some reason it converts to an string even though the initial is an array??
+        if (typeof accountNames === "string") accountNames = [accountNames];
 
-    let accountMatches = Object.values(robloxAccounts).filter(acc => (acc.name).toLowerCase() === args[2]);
-    if (accountMatches.length>0) account = accountMatches[0]; else return "Couldn't find account";
+        let similarName = await rankSimilarity(args[1], accountNames);
+        if (!similarName) return "Couldn't similar username to the one requested";
 
-    if (isNaN(request) == true){
+        let userConfirmation = await createQuestion(message, `**"${args[1]}"** wasn't found, did you mean **"${similarName}"**?`);
+        if (!userConfirmation) return "Mass-send request canceled";
+
+        account = (Object.values(robloxAccounts).filter(acc => acc.name === similarName))[0]
+    };
+
+    if (isNaN(request)){
         let itemNames = (Object.values(rolimonsValues).reduce((a, c) => a[a.length+1] = c[0], []));
-        let similarItem = await rankSimilarity(request, itemNames);
 
+        let similarItem = await rankSimilarity(request, itemNames);
         if (!similarItem) return "Couldn't find a similar item name to the one requested";
 
-        let name2id = Object.keys(rolimonsValues).filter(id => rolimonsValues[id][0] === similarItem);
-        request = name2id[0];
+        let userConfirmation = await createQuestion(message, `**"${request}"** wasn't found, did you mean **"${similarItem}"**?`);
+        if (!userConfirmation) return "Mass-send request canceled";
+
+        request = (Object.keys(rolimonsValues).filter(id => rolimonsValues[id][0] === similarItem))[0];
     }else if (!rolimonsValues[request]) return "Item entered doesn't exist";
 
     if (account.scrapingQueue.includes(request)) return "Item is already being queued";
+
+    let beContinuous = await createQuestion(message, `Would you like BT to constantly check for new owners on this item or just send to all the recently online owners?\n✅=continuous/❌=one time`);
+    continuous = (beContinuous)?true:false;
 
     let confirmationResponse = await confirmTrade(offer, request, account, message);
     if (confirmationResponse[1]) queue({
@@ -182,7 +278,7 @@ module.exports = {
         {
             name: "mass-send",
             description: "Mass sends a specific trade to the owners of an item. Seperate items with commmas in the offer section",
-            options: "[continuous sending? (true/false)] [account] [request] [offer]",
+            options: "[account] [request] [offer]",
             permissions: []
         },
         {

@@ -22,7 +22,7 @@ global.properOutput = {
         }
     },
     error: (text) => properOutput.output(text, "red"),
-    reactiveError: async (text, msDelay, reaction) => await new Promise(async (resolve) => {
+    reactiveError: async (text, msDelay, reaction) => await new Promise((resolve) => {
         properOutput.error(text);
         setTimeout(() => {
             if (reaction) reaction(); 
@@ -40,7 +40,7 @@ fs.readFile("./config.yml", 'utf-8', async (err, res) => {
     }catch(err){
         await properOutput.reactiveError(`Failed to read config.yml\nStopping process in 20 seconds...`, 20_000, process.exit);
     };
-    
+
     for (cookie of config.auth.cookies){
         if (cookie.length<10) continue;
         
@@ -57,26 +57,28 @@ fs.readFile("./config.yml", 'utf-8', async (err, res) => {
         }
     };
 
-    if (Object.keys(robloxAccounts).length < 1) {
-        await properOutput.reactiveError("All the cookies listed in your config are invalid.\nStopping process in 20 seconds...", 20_000, process.exit)
-    };
+    if (Object.keys(robloxAccounts).length < 1) properOutput.reactiveError(
+        "All the cookies listed in your config are invalid.\nStopping process in 20 seconds...",
+        20_000, 
+        process.exit()
+    );
 
     // Couldn't think of anything else atm
     properOutput.output(`Authenticated: [${
         Object.values(robloxAccounts).reduce((a, current) => a[a.length+1] = current.name, [])
     }]`.replace(/,/g, ", "), "green");
 
-     // Values 
+    // Values 
     let gettingValues = properOutput.output("Getting values...", "yellow");
-    global.rolimonsValues = await rbxApi.getRolimonsValues();
-    gettingValues("Got values!", "green");
     new Promise(async () => {
         while (true){
             await delay(50_000);
             global.rolimonsValues = await rbxApi.getRolimonsValues();
         }
     });
-    
+    global.rolimonsValues = await rbxApi.getRolimonsValues();
+    gettingValues("Got values!", "green");
+
     // Discord bot
     let startingDiscordBot = properOutput.output("Starting Discord bot...", "yellow");
     await require("./subFiles/discordBot.js").start();;
@@ -85,4 +87,4 @@ fs.readFile("./config.yml", 'utf-8', async (err, res) => {
     // Inventory checker
     await require("./subFiles/inventoryUpdates.js")();
     properOutput.output("Started inventory checking for all accounts", "green");
-});
+})  

@@ -55,14 +55,14 @@ const startQueue = async (trade, account, continueous) => {
             if (config.output.searchedPeople) properOutput.output(`Searching ${item.owner.id} (owner of ${trade.itemId})`, "yellow");
 
             // [time cached, owner]
-            if (cachedOwners.includes(item.owner.id)){
-                let cachedOwner = cachedOwners.filter(cache => (cache[1] == item.owner.id));
-                if (Date.now() - cache[0] > 4.32e+7) {
+            let cachedOwner = cachedOwners.filter(cache => (cache[1] == item.owner.id));
+            if (cachedOwner.length > 0){
+                if (Date.now() - cachedOwner[0][0] > 4.32e+7) {
                     let ownerIndex = cachedOwners.indexOf(cachedOwner);
                     cachedOwners.splice(ownerIndex, 1);
 
                 }else continue
-            }
+            };
 
             cachedOwners.push([Date.now(), item.owner.id]);
 

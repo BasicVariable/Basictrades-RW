@@ -251,7 +251,7 @@ const sendTrade = async (tradeData, account) => {
                 return true;
         
             case 429:
-                await properOutput.reactiveError(`Ratelimited on ${account.name}, timing out for an hour...`, 3.6e+6);
+                await properOutput.reactiveError(`Ratelimited on ${account.name}, timing out for 30 minutes...`, 1.8e+6);
                 return false;
                 
             case 401:
